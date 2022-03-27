@@ -10,6 +10,7 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #ifndef COLS
 unsigned short COLS;
@@ -17,6 +18,15 @@ unsigned short COLS;
 #ifndef LINES
 unsigned short LINES;
 #endif
+
+void sig_winrsz_handler(int sig){
+  if(sig == SIGWINCH){
+	struct winsize winsz;
+	ioctl(0, TIOCGWINSZ, &winsz);
+	COLS = winsz.ws_col;
+	LINES = winsz.ws_row;
+  }
+}
 
 #define SB_GL 0
 #define SB_LL 1
@@ -253,6 +263,11 @@ int main(int argc, char* argv[]){
   ioctl(0, TIOCGWINSZ, &winsz);
   COLS = winsz.ws_col;
   LINES = winsz.ws_row;
+
+  struct sigaction sig_act = {
+	.sa_handler = &sig_winrsz_handler
+  };
+  sigaction(SIGWINCH, &sig_act, NULL);
   
   int sortby = SB_GL;
   
